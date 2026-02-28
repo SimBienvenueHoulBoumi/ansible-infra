@@ -3,3 +3,5 @@
 # Valeurs par défaut si group_vars/all.yml n'est pas chargé (ex. chemin inventory)
 argocd_namespace: "argocd"
 kube_context: "kind-kind"
+# Désactiver la vérification SSL quand on utilise host.docker.internal (certificat émis pour 127.0.0.1)
+k8s_validate_certs: false

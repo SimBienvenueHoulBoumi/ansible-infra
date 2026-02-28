@@ -14,6 +14,7 @@
   kubernetes.core.k8s_info:
     kind: Namespace
     name: default
+    validate_certs: "{{ k8s_validate_certs | default(false) }}"
   register: cluster_check
   failed_when: false
   environment: "{{ {'KUBECONFIG': kubeconfig} if (kubeconfig is defined and kubeconfig) else omit }}"
@@ -31,6 +32,7 @@
       kind: Namespace
       metadata:
         name: "{{ argocd_namespace }}"
+    validate_certs: "{{ k8s_validate_certs | default(false) }}"
   environment: "{{ {'KUBECONFIG': kubeconfig} if (kubeconfig is defined and kubeconfig) else omit }}"
 
 - name: Mettre à jour les dépendances du chart ArgoCD
@@ -47,6 +49,7 @@
     create_namespace: true
     values_file: "{{ argocd_values_file }}"
     context: "{{ kube_context | default(omit) }}"
+    validate_certs: "{{ k8s_validate_certs | default(false) }}"
     wait: true
     wait_timeout: "10m"
     state: present
