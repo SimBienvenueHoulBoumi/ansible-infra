@@ -83,6 +83,12 @@ pipeline {
                             echo "Installation de la lib Python kubernetes pour l'utilisateur courant..."
                             python3 -m pip install --user --break-system-packages kubernetes 2>/dev/null || python3 -m pip install --user kubernetes
                         fi
+                        # Helm requis pour helm dependency update et le module helm (reconstruire l'image pour l'avoir à demeure)
+                        if ! command -v helm >/dev/null 2>&1; then
+                            echo "Installation de Helm..."
+                            curl -sSLf https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+                        fi
+                        helm version
                         # Depuis le conteneur, 127.0.0.1 = le conteneur ; patcher le kubeconfig et le passer à Ansible explicitement
                         ORIG_KUBE="\${KUBECONFIG:-/home/jenkins/.kube/config}"
                         KUBE_EXTRA=""
