@@ -36,7 +36,8 @@ pipeline {
     }
 
     environment {
-        KUBECONFIG = "${env.HOME}/.kube/config"
+        // kubeconfig monté par docker-compose dans l'agent : ${HOME}/.kube -> /home/jenkins/.kube (agent tourne en root, HOME=/root)
+        KUBECONFIG = "/home/jenkins/.kube/config"
     }
 
     stages {
@@ -76,6 +77,11 @@ pipeline {
                         if ! command -v ansible-playbook >/dev/null 2>&1; then
                             echo "Ansible introuvable. Reconstruire l'image jenkins-agent : cd infra && docker compose build jenkins-agent && docker compose up -d jenkins-agent"
                             exit 127
+                        fi
+                        # Lib kubernetes requise par kubernetes.core (au cas où l'image n'a pas été reconstruite)
+                        if ! python3 -c "import kubernetes" 2>/dev/null; then
+                            echo "Installation de la lib Python kubernetes pour l'utilisateur courant..."
+                            python3 -m pip install --user --break-system-packages kubernetes 2>/dev/null || python3 -m pip install --user kubernetes
                         fi
                         ansible --version
                         TAGS=""

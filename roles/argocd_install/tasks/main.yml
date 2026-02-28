@@ -30,13 +30,13 @@
       kind: Namespace
       metadata:
         name: "{{ argocd_namespace }}"
-  environment: "{{ {'KUBECONFIG': kubeconfig} if kubeconfig is defined and kubeconfig else {} }}"
+  environment: "{{ {'KUBECONFIG': kubeconfig} if (kubeconfig is defined and kubeconfig) else omit }}"
 
 - name: Mettre à jour les dépendances du chart ArgoCD
   ansible.builtin.shell: helm dependency update .
   args:
     chdir: "{{ argocd_chart_path }}"
-  environment: "{{ {'KUBECONFIG': kubeconfig} if kubeconfig is defined and kubeconfig else {} }}"
+  environment: "{{ {'KUBECONFIG': kubeconfig} if (kubeconfig is defined and kubeconfig) else omit }}"
 
 - name: Installer ou mettre à jour ArgoCD avec Helm
   kubernetes.core.helm:
@@ -49,7 +49,7 @@
     wait: true
     wait_timeout: "10m"
     state: present
-  environment: "{{ {'KUBECONFIG': kubeconfig} if kubeconfig is defined and kubeconfig else {} }}"
+  environment: "{{ {'KUBECONFIG': kubeconfig} if (kubeconfig is defined and kubeconfig) else omit }}"
 
 - name: Afficher le mot de passe admin initial (si le secret existe)
   ansible.builtin.shell: |
