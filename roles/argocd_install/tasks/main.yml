@@ -43,7 +43,7 @@
 
 - name: Installer ou mettre à jour ArgoCD avec Helm
   kubernetes.core.helm:
-    name: argocd
+    name: "{{ argocd_helm_release_name | default('argocd') }}"
     chart_ref: "{{ argocd_chart_path }}"
     release_namespace: "{{ argocd_namespace }}"
     create_namespace: true
@@ -52,7 +52,7 @@
     context: "{{ kube_context | default(omit) }}"
     validate_certs: "{{ k8s_validate_certs | default(false) }}"
     wait: true
-    wait_timeout: "10m"
+    wait_timeout: "{{ argocd_helm_wait_timeout | default('10m') }}"
     state: present
   environment: "{{ {'KUBECONFIG': kubeconfig} if (kubeconfig is defined and kubeconfig) else omit }}"
 

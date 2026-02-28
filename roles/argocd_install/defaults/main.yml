@@ -1,7 +1,10 @@
 ---
-# argocd_chart_path et argocd_values_file sont définis par le playbook (chart au même niveau qu'ansible)
-# Valeurs par défaut si group_vars/all.yml n'est pas chargé (ex. chemin inventory)
+# Variables définies par le playbook (chemins du chart)
+# argocd_chart_path, argocd_values_file
+
+# Valeurs de repli si group_vars/all.yml non chargé (ex. autre inventaire)
 argocd_namespace: "argocd"
 kube_context: "kind-dev"
-# Désactiver la vérification SSL quand on utilise host.docker.internal (certificat émis pour 127.0.0.1)
 k8s_validate_certs: false
+argocd_helm_release_name: "argocd"
+argocd_helm_wait_timeout: "10m"

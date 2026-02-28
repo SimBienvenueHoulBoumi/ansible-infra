@@ -1,13 +1,37 @@
-# --- Source unique des variables GitOps (inventaire sans doublon) ---
+# =============================================================================
+# Source unique des variables GitOps – modifier ce fichier pour toute montée
+# de version ou changement d’environnement (contexte, namespace, timeouts, etc.).
+# =============================================================================
 
-# Cluster (contexte courant : kubectl config get-contexts)
+# -----------------------------------------------------------------------------
+# Cluster Kubernetes
+# -----------------------------------------------------------------------------
+# Contexte à utiliser (kubectl config get-contexts)
 kube_context: "kind-dev"
 
-# ArgoCD
+# Désactiver la vérification SSL (certificat API) quand accès depuis Docker
+# (ex. host.docker.internal ; certificat souvent émis pour 127.0.0.1).
+# Mettre true en production avec un vrai certificat.
+k8s_validate_certs: false
+
+# -----------------------------------------------------------------------------
+# ArgoCD – installation Helm
+# -----------------------------------------------------------------------------
 argocd_namespace: "argocd"
+
+# Nom du release Helm (changer si besoin pour cohabitation de versions)
+argocd_helm_release_name: "argocd"
+
+# Délai d’attente après install/upgrade Helm (augmenter en cas de montée de version lente)
+argocd_helm_wait_timeout: "10m"
+
+# -----------------------------------------------------------------------------
+# ArgoCD – Applications déclaratives
+# -----------------------------------------------------------------------------
+# Serveur de destination par défaut pour les Application CRs
 argocd_destination_server: "https://kubernetes.default.svc"
 
-# Applications à créer (liste déclarative)
+# Liste des applications à créer/mettre à jour (nom, repo, path, values, sync policy)
 argocd_applications:
   - name: library-management
     namespace: default

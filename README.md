@@ -8,12 +8,17 @@ Automatisation **déclarative** et **idempotente** : installation d’ArgoCD (ch
 - Collection `kubernetes.core` : `ansible-galaxy collection install -r requirements.yml`
 - `kubectl`, `helm` et accès au cluster (KUBECONFIG ou contexte par défaut)
 
-## Variables (group_vars/all.yml uniquement)
+## Variables (group_vars/all.yml – source unique pour montées de version)
+
+Toute modification de contexte, timeout, release ou liste d’applications se fait dans **`group_vars/all.yml`** uniquement.
 
 | Variable | Description |
 |----------|-------------|
-| `kube_context` | Contexte kubectl (ex. `kind-kind`) |
+| `kube_context` | Contexte kubectl (ex. `kind-dev`) |
+| `k8s_validate_certs` | Vérification SSL API (false si accès via host.docker.internal) |
 | `argocd_namespace` | Namespace ArgoCD |
+| `argocd_helm_release_name` | Nom du release Helm (défaut `argocd`) |
+| `argocd_helm_wait_timeout` | Délai d’attente Helm (ex. `10m` ; augmenter en cas de montée de version) |
 | `argocd_destination_server` | Serveur de destination des applications (défaut in-cluster) |
 | `argocd_applications` | Liste des applications (name, namespace, repo_url, path, helm_values, sync_policy) |
 
