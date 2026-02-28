@@ -5,7 +5,7 @@
   ansible.builtin.include_tasks: build_definitions.yml
 
 - name: Créer ou mettre à jour les applications ArgoCD
-  community.kubernetes.k8s:
+  kubernetes.core.k8s:
     state: present
     definition: "{{ item }}"
   loop: "{{ argocd_application_definitions }}"

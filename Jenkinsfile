@@ -13,6 +13,11 @@ pipeline {
     }
 
     parameters {
+        string(
+            name: 'ANSIBLE_DIR',
+            defaultValue: 'infra/ansible',
+            description: 'Chemin vers le répertoire Ansible (playbooks + roles). Par défaut infra/ansible. Si votre repo a ansible à la racine, mettre ansible.'
+        )
         choice(
             name: 'ANSIBLE_TAGS',
             choices: ['all', 'install', 'applications'],
@@ -21,8 +26,6 @@ pipeline {
     }
 
     environment {
-        ANSIBLE_DIR = 'infra/ansible'
-        // KUBECONFIG utilisé par Ansible (agent : volume monté /home/jenkins/.kube)
         KUBECONFIG = "${env.HOME}/.kube/config"
     }
 
@@ -30,13 +33,23 @@ pipeline {
         stage('📥 Checkout') {
             steps {
                 checkout scm
-                sh 'ls -la infra/ansible/ 2>/dev/null || (echo "Erreur: infra/ansible/ introuvable (vérifier le repo du job)" && exit 1)'
+                sh """
+                    ANSIBLE_DIR='${params.ANSIBLE_DIR}'
+                    if [ ! -d "\$ANSIBLE_DIR" ] || [ ! -f "\$ANSIBLE_DIR/playbooks/gitops.yml" ]; then
+                        echo "Erreur: \$ANSIBLE_DIR/ introuvable ou playbooks/gitops.yml manquant."
+                        echo "Le repo cloné doit contenir le dossier Ansible (ex. infra/ansible/ avec playbooks/ et roles/)."
+                        echo "Soit : configurer le job pour cloner un repo qui a infra/ à la racine."
+                        echo "Soit : utiliser le paramètre ANSIBLE_DIR (ex. ansible si le dossier est à la racine)."
+                        exit 1
+                    fi
+                    ls -la "\$ANSIBLE_DIR/"
+                """
             }
         }
 
         stage('🔧 Ansible') {
             steps {
-                dir(env.ANSIBLE_DIR) {
+                dir("${params.ANSIBLE_DIR}") {
                     sh """
                         set -e
                         ansible --version

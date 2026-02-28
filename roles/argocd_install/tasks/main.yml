@@ -11,7 +11,7 @@
     fail_msg: "argocd_chart_path et argocd_values_file doivent être définis par le playbook (chart au même niveau qu'ansible)."
 
 - name: Vérifier l'accès au cluster Kubernetes
-  community.kubernetes.k8s_info:
+  kubernetes.core.k8s_info:
     kind: Namespace
     name: default
   register: cluster_check
@@ -24,7 +24,7 @@
   when: cluster_check is failed
 
 - name: Créer le namespace ArgoCD s'il n'existe pas
-  community.kubernetes.k8s:
+  kubernetes.core.k8s:
     state: present
     definition:
       apiVersion: v1
@@ -40,7 +40,7 @@
   environment: "{{ {'KUBECONFIG': kubeconfig} if kubeconfig is defined and kubeconfig else {} }}"
 
 - name: Installer ou mettre à jour ArgoCD avec Helm
-  community.kubernetes.helm:
+  kubernetes.core.helm:
     name: argocd
     chart_ref: "{{ argocd_chart_path }}"
     release_namespace: "{{ argocd_namespace }}"

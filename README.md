@@ -5,7 +5,7 @@ Automatisation **déclarative** et **idempotente** : installation d’ArgoCD (ch
 ## Prérequis
 
 - Ansible 2.14+
-- Collection `community.kubernetes` : `ansible-galaxy collection install -r requirements.yml`
+- Collection `kubernetes.core` : `ansible-galaxy collection install -r requirements.yml`
 - `kubectl`, `helm` et accès au cluster (KUBECONFIG ou contexte par défaut)
 
 ## Variables (group_vars/all.yml uniquement)

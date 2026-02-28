@@ -1,5 +1,5 @@
 ---
-# Collections requises pour les playbooks GitOps
+# Collections pour les playbooks GitOps (community.kubernetes est déprécié → kubernetes.core)
 collections:
-  - name: community.kubernetes
-    version: ">=3.0.0"
+  - name: kubernetes.core
+    version: ">=2.0.0"
