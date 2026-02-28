@@ -2,6 +2,6 @@
 # argocd_chart_path et argocd_values_file sont définis par le playbook (chart au même niveau qu'ansible)
 # Valeurs par défaut si group_vars/all.yml n'est pas chargé (ex. chemin inventory)
 argocd_namespace: "argocd"
-kube_context: "kind-kind"
+kube_context: "kind-dev"
 # Désactiver la vérification SSL quand on utilise host.docker.internal (certificat émis pour 127.0.0.1)
 k8s_validate_certs: false

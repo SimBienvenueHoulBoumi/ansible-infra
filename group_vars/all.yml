@@ -1,7 +1,7 @@
 # --- Source unique des variables GitOps (inventaire sans doublon) ---
 
-# Cluster
-kube_context: "kind-kind"
+# Cluster (contexte courant : kubectl config get-contexts)
+kube_context: "kind-dev"
 
 # ArgoCD
 argocd_namespace: "argocd"
