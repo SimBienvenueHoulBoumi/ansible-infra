@@ -72,6 +72,11 @@ pipeline {
                 dir(env.ANSIBLE_WORKDIR) {
                     sh """
                         set -e
+                        export PATH="/usr/local/bin:/usr/bin:\$PATH"
+                        if ! command -v ansible-playbook >/dev/null 2>&1; then
+                            echo "Ansible introuvable. Reconstruire l'image jenkins-agent : cd infra && docker compose build jenkins-agent && docker compose up -d jenkins-agent"
+                            exit 127
+                        fi
                         ansible --version
                         TAGS=""
                         case "${params.ANSIBLE_TAGS}" in

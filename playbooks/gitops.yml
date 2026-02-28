@@ -1,6 +1,8 @@
 ---
 # GitOps : installer ArgoCD + créer les Application CRs
-# Supporte : repo type infra/ansible (argocd = ../argocd) ou ansible-infra à la racine (argocd = ./argocd)
+# Chart : ansible_root = répertoire qui contient playbooks/ (même niveau que Jenkinsfile).
+#   - argocd/ à côté de playbooks/ (ansible/argocd) → trouvé en premier
+#   - ou argocd/ au niveau parent (infra/argocd) → fallback
 
 - name: GitOps (ArgoCD)
   hosts: localhost
@@ -8,12 +10,12 @@
   vars:
     ansible_root: "{{ playbook_dir }}/.."
   tasks:
-    - name: Vérifier si le chart ArgoCD est dans le repo (ansible-infra avec argocd/)
+    - name: Chart ArgoCD dans le même répertoire que le Jenkinsfile (ansible/argocd)
       ansible.builtin.stat:
         path: "{{ ansible_root }}/argocd/Chart.yaml"
       register: argocd_in_repo
 
-    - name: Vérifier si le chart ArgoCD est au niveau parent (infra/argocd)
+    - name: Chart ArgoCD au niveau parent (infra/argocd)
       ansible.builtin.stat:
         path: "{{ ansible_root }}/../argocd/Chart.yaml"
       register: argocd_sibling
@@ -24,10 +26,12 @@
         argocd_values_file: "{{ (ansible_root + '/argocd/values.yaml') if argocd_in_repo.stat.exists else (ansible_root + '/../argocd/values.yaml') }}"
       when: argocd_in_repo.stat.exists or argocd_sibling.stat.exists
 
-    - name: Échec si le chart ArgoCD est introuvable
+    - name: Échec si le chart ArgoCD est introuvable (uniquement si on lance l'install)
       ansible.builtin.fail:
-        msg: "Chart ArgoCD introuvable. Ajouter argocd/ (Chart.yaml, values.yaml) à la racine du repo ou au même niveau qu'ansible (../argocd)."
-      when: not (argocd_in_repo.stat.exists or argocd_sibling.stat.exists)
+        msg: "Chart ArgoCD introuvable. Ajouter argocd/ (Chart.yaml, values.yaml) à la racine du repo, ou lancer avec --tags applications pour ne créer que les Application CRs."
+      when: >-
+        not (argocd_in_repo.stat.exists or argocd_sibling.stat.exists)
+        and ('install' in (ansible_run_tags | default([])) or 'argocd' in (ansible_run_tags | default([])) or (ansible_run_tags | default([]) | length == 0))
 
     - name: Installer / mettre à jour ArgoCD (Helm)
       ansible.builtin.include_role:
