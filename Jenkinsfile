@@ -68,7 +68,7 @@ pipeline {
             }
         }
 
-        stage('🔧 Ansible') {
+        stage('🛠️ Vérifier les outils') {
             steps {
                 dir(env.ANSIBLE_WORKDIR) {
                     sh """
@@ -78,34 +78,64 @@ pipeline {
                             echo "Ansible introuvable. Reconstruire l'image jenkins-agent : cd infra && docker compose build jenkins-agent && docker compose up -d jenkins-agent"
                             exit 127
                         fi
-                        # Lib kubernetes requise par kubernetes.core (au cas où l'image n'a pas été reconstruite)
+                        ansible --version
+                    """
+                    sh """
                         if ! python3 -c "import kubernetes" 2>/dev/null; then
-                            echo "Installation de la lib Python kubernetes pour l'utilisateur courant..."
+                            echo "Installation de la lib Python kubernetes..."
                             python3 -m pip install --user --break-system-packages kubernetes 2>/dev/null || python3 -m pip install --user kubernetes
                         fi
-                        # Helm requis pour helm dependency update et le module helm (reconstruire l'image pour l'avoir à demeure)
+                        python3 -c "import kubernetes; print('kubernetes:', kubernetes.__version__)"
+                    """
+                    sh """
                         if ! command -v helm >/dev/null 2>&1; then
                             echo "Installation de Helm..."
                             curl -sSLf https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
                         fi
-                        helm version
-                        # Depuis le conteneur, 127.0.0.1 = le conteneur ; patcher le kubeconfig et le passer à Ansible explicitement
-                        ORIG_KUBE="\${KUBECONFIG:-/home/jenkins/.kube/config}"
-                        KUBE_EXTRA=""
-                        if [ -f "\$ORIG_KUBE" ] && grep -q '127.0.0.1' "\$ORIG_KUBE" 2>/dev/null; then
-                            PATCHED="/tmp/kubeconfig-docker.yaml"
-                            sed 's/127.0.0.1/host.docker.internal/g' "\$ORIG_KUBE" > "\$PATCHED"
-                            export KUBECONFIG="\$PATCHED"
-                            KUBE_EXTRA="-e kubeconfig=\$PATCHED"
-                            echo "Kubeconfig adapté pour Docker (127.0.0.1 -> host.docker.internal), passé à Ansible via -e kubeconfig."
-                        fi
-                        ansible --version
+                        helm version --short
+                    """
+                }
+            }
+        }
+
+        stage('🔑 Préparer le kubeconfig') {
+            steps {
+                script {
+                    def kubeExtra = sh(
+                        script: """
+                            set -e
+                            ORIG_KUBE="\${KUBECONFIG:-/home/jenkins/.kube/config}"
+                            if [ -f "\$ORIG_KUBE" ] && grep -q '127.0.0.1' "\$ORIG_KUBE" 2>/dev/null; then
+                                PATCHED="/tmp/kubeconfig-docker.yaml"
+                                sed 's/127.0.0.1/host.docker.internal/g' "\$ORIG_KUBE" > "\$PATCHED"
+                                echo "-e kubeconfig=\$PATCHED"
+                            else
+                                echo ""
+                            fi
+                        """,
+                        returnStdout: true
+                    ).trim()
+                    env.KUBE_EXTRA = kubeExtra
+                    if (kubeExtra) {
+                        env.KUBECONFIG = "/tmp/kubeconfig-docker.yaml"
+                        echo "Kubeconfig adapté pour Docker (127.0.0.1 → host.docker.internal)."
+                    }
+                }
+            }
+        }
+
+        stage('▶️ Lancer le playbook GitOps') {
+            steps {
+                dir(env.ANSIBLE_WORKDIR) {
+                    sh """
+                        set -e
+                        export PATH="/usr/local/bin:/usr/bin:\$PATH"
                         TAGS=""
                         case "${params.ANSIBLE_TAGS}" in
                             install)      TAGS="--tags install" ;;
                             applications) TAGS="--tags applications" ;;
                         esac
-                        ansible-playbook playbooks/gitops.yml \$TAGS \$KUBE_EXTRA -v
+                        ansible-playbook playbooks/gitops.yml \$TAGS \${KUBE_EXTRA:-} -v
                     """
                 }
             }
