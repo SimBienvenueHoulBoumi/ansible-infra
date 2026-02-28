@@ -14,9 +14,19 @@ pipeline {
 
     parameters {
         string(
+            name: 'INFRA_REPO_URL',
+            defaultValue: '',
+            description: '(Optionnel) Si le repo cloné n\'a pas infra/, URL du repo infra à cloner (ex. https://github.com/user/mon-infra.git). La racine du repo doit contenir ansible/ et argocd/.'
+        )
+        string(
+            name: 'INFRA_BRANCH',
+            defaultValue: 'main',
+            description: 'Branche du repo infra (si INFRA_REPO_URL est renseigné).'
+        )
+        string(
             name: 'ANSIBLE_DIR',
             defaultValue: 'infra/ansible',
-            description: 'Chemin vers le répertoire Ansible (playbooks + roles). Par défaut infra/ansible. Si votre repo a ansible à la racine, mettre ansible.'
+            description: 'Chemin vers le répertoire Ansible. Par défaut infra/ansible.'
         )
         choice(
             name: 'ANSIBLE_TAGS',
@@ -33,13 +43,23 @@ pipeline {
         stage('📥 Checkout') {
             steps {
                 checkout scm
+                script {
+                    def hasAnsible = fileExists("${params.ANSIBLE_DIR}/playbooks/gitops.yml")
+                    if (!hasAnsible && params.INFRA_REPO_URL?.trim()) {
+                        echo "infra/ansible absent : clonage du repo infra (${params.INFRA_REPO_URL})..."
+                        sh """
+                            rm -rf infra
+                            git clone --depth 1 -b '${params.INFRA_BRANCH}' '${params.INFRA_REPO_URL}' infra
+                            test -d infra/ansible && test -f infra/ansible/playbooks/gitops.yml || (echo 'Le repo doit avoir ansible/ et argocd/ à la racine.' && exit 1)
+                        """
+                    }
+                }
                 sh """
                     ANSIBLE_DIR='${params.ANSIBLE_DIR}'
                     if [ ! -d "\$ANSIBLE_DIR" ] || [ ! -f "\$ANSIBLE_DIR/playbooks/gitops.yml" ]; then
                         echo "Erreur: \$ANSIBLE_DIR/ introuvable ou playbooks/gitops.yml manquant."
-                        echo "Le repo cloné doit contenir le dossier Ansible (ex. infra/ansible/ avec playbooks/ et roles/)."
-                        echo "Soit : configurer le job pour cloner un repo qui a infra/ à la racine."
-                        echo "Soit : utiliser le paramètre ANSIBLE_DIR (ex. ansible si le dossier est à la racine)."
+                        echo "  - Configurer le job pour cloner un repo qui a infra/ à la racine, OU"
+                        echo "  - Renseigner le paramètre INFRA_REPO_URL (URL du repo contenant ansible/ et argocd/ à la racine)."
                         exit 1
                     fi
                     ls -la "\$ANSIBLE_DIR/"
