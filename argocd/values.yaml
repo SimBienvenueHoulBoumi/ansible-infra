@@ -1,0 +1,55 @@
+argo-cd:
+  global:
+    # Domaine public pour l'UI (via Traefik : https://argocd.localhost)
+    # Doit correspondre à l'URL d'accès pour que redirections et liens fonctionnent
+    domain: "argocd.localhost"
+
+  server:
+    # Service Argo CD exposé en NodePort pour un accès direct depuis l'hôte / Docker
+    service:
+      type: NodePort
+      port: 80
+      nodePortHttp: 30080   # http://localhost:30080 pour accéder à l'UI / API
+
+    # Ingress plus nécessaire pour l'instant (accès direct via NodePort)
+    ingress:
+      enabled: false
+    
+    # Ressources pour améliorer la stabilité
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+  configs:
+    params:
+      # HTTP simple (pas de TLS) car on passe par NodePort local
+      server.insecure: "true"
+    
+    # Configuration pour améliorer la stabilité
+    cm:
+      # URL publique : accès via Traefik (évite redirections vers localhost:8084)
+      url: "https://argocd.localhost"
+  
+  repoServer:
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+  
+  applicationController:
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+
