@@ -16,6 +16,7 @@
     name: default
   register: cluster_check
   failed_when: false
+  environment: "{{ {'KUBECONFIG': kubeconfig} if (kubeconfig is defined and kubeconfig) else omit }}"
 
 - name: Échec si le cluster n'est pas joignable
   ansible.builtin.fail:
