@@ -1,0 +1,66 @@
+---
+# Installation ArgoCD via Helm (chart et values fournis par le playbook)
+
+- name: Vérifier que les chemins du chart sont définis par le playbook
+  ansible.builtin.assert:
+    that:
+      - argocd_chart_path is defined
+      - argocd_values_file is defined
+      - (argocd_chart_path | default('')) | length > 0
+      - (argocd_values_file | default('')) | length > 0
+    fail_msg: "argocd_chart_path et argocd_values_file doivent être définis par le playbook (chart au même niveau qu'ansible)."
+
+- name: Vérifier l'accès au cluster Kubernetes
+  community.kubernetes.k8s_info:
+    kind: Namespace
+    name: default
+  register: cluster_check
+  failed_when: false
+  changed_warning: false
+
+- name: Échec si le cluster n'est pas joignable
+  ansible.builtin.fail:
+    msg: "Le cluster Kubernetes n'est pas accessible (vérifier KUBECONFIG / kind)."
+  when: cluster_check is failed
+
+- name: Créer le namespace ArgoCD s'il n'existe pas
+  community.kubernetes.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ argocd_namespace }}"
+  environment: "{{ {'KUBECONFIG': kubeconfig} if kubeconfig is defined and kubeconfig else {} }}"
+
+- name: Mettre à jour les dépendances du chart ArgoCD
+  ansible.builtin.shell: helm dependency update .
+  args:
+    chdir: "{{ argocd_chart_path }}"
+  environment: "{{ {'KUBECONFIG': kubeconfig} if kubeconfig is defined and kubeconfig else {} }}"
+
+- name: Installer ou mettre à jour ArgoCD avec Helm
+  community.kubernetes.helm:
+    name: argocd
+    chart_ref: "{{ argocd_chart_path }}"
+    release_namespace: "{{ argocd_namespace }}"
+    create_namespace: true
+    values_file: "{{ argocd_values_file }}"
+    context: "{{ kube_context | default(omit) }}"
+    wait: true
+    wait_timeout: "10m"
+    state: present
+  environment: "{{ {'KUBECONFIG': kubeconfig} if kubeconfig is defined and kubeconfig else {} }}"
+
+- name: Afficher le mot de passe admin initial (si le secret existe)
+  ansible.builtin.shell: |
+    kubectl get secret argocd-initial-admin-secret -n "{{ argocd_namespace }}" \
+      -o jsonpath='{.data.password}' 2>/dev/null | base64 -d; echo
+  register: argocd_password
+  changed_when: false
+  failed_when: false
+
+- name: Afficher le mot de passe admin ArgoCD
+  ansible.builtin.debug:
+    msg: "ArgoCD admin password (initial): {{ argocd_password.stdout }}"
+  when: argocd_password.stdout | length > 0

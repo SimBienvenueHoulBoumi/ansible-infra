@@ -1,0 +1,27 @@
+# --- Source unique des variables GitOps (inventaire sans doublon) ---
+
+# Cluster
+kube_context: "kind-kind"
+
+# ArgoCD
+argocd_namespace: "argocd"
+argocd_destination_server: "https://kubernetes.default.svc"
+
+# Applications à créer (liste déclarative)
+argocd_applications:
+  - name: library-management
+    namespace: default
+    project: default
+    repo_url: "https://github.com/SimBienvenueHoulBoumi/library_management_back.git"
+    path: "kubernetes/charts/library-management"
+    target_revision: "HEAD"
+    helm_values:
+      image:
+        repository: "host.docker.internal:8083/repository/docker-hosted/simdev/library-management"
+        tag: "latest"
+    sync_policy:
+      automated:
+        prune: true
+        selfHeal: true
+      sync_options:
+        - CreateNamespace=true

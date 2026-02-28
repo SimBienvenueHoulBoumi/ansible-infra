@@ -1,0 +1,5 @@
+---
+# Collections requises pour les playbooks GitOps
+collections:
+  - name: community.kubernetes
+    version: ">=3.0.0"

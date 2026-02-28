@@ -1,0 +1,7 @@
+---
+dependencies: []
+
+galaxy_info:
+  role_name: argocd_install
+  description: Install or upgrade ArgoCD in the cluster via Helm
+  author: infra

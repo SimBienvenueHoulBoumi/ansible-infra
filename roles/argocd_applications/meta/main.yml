@@ -1,0 +1,7 @@
+---
+dependencies: []
+
+galaxy_info:
+  role_name: argocd_applications
+  description: Create or update ArgoCD Application resources from a list
+  author: infra

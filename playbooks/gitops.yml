@@ -1,0 +1,27 @@
+---
+# GitOps : installer ArgoCD (chart au même niveau qu'ansible) + créer les Application CRs
+# Usage : depuis infra/ansible → ansible-playbook playbooks/gitops.yml [--tags install|applications]
+
+- name: GitOps (ArgoCD)
+  hosts: localhost
+  gather_facts: true
+  vars:
+    ansible_root: "{{ playbook_dir }}/.."
+    argocd_chart_path: "{{ ansible_root }}/../argocd"
+    argocd_values_file: "{{ ansible_root }}/../argocd/values.yaml"
+  tasks:
+    - name: Vérifier que le chart ArgoCD existe
+      ansible.builtin.stat:
+        path: "{{ argocd_chart_path }}/Chart.yaml"
+      register: argocd_chart_stat
+      failed_when: not argocd_chart_stat.stat.exists
+
+    - name: Installer / mettre à jour ArgoCD (Helm)
+      ansible.builtin.include_role:
+        name: argocd_install
+      tags: [install, argocd]
+
+    - name: Créer ou mettre à jour les applications ArgoCD
+      ansible.builtin.include_role:
+        name: argocd_applications
+      tags: [applications, apps]

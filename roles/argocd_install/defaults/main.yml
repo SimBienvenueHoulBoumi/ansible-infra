@@ -1,0 +1,2 @@
+---
+# argocd_chart_path et argocd_values_file sont définis par le playbook (chart au même niveau qu'ansible)
