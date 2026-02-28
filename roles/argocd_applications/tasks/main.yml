@@ -1,6 +1,10 @@
 ---
 # Créer les Application ArgoCD à partir de argocd_applications (group_vars)
 
+- name: Initialiser les définitions (vide si argocd_applications absent ou vide)
+  ansible.builtin.set_fact:
+    argocd_application_definitions: []
+
 - name: Construire les définitions Application
   ansible.builtin.include_tasks: build_definitions.yml
 
@@ -8,7 +12,7 @@
   kubernetes.core.k8s:
     state: present
     definition: "{{ item }}"
-  loop: "{{ argocd_application_definitions }}"
+  loop: "{{ argocd_application_definitions | default([]) }}"
   loop_control:
     label: "{{ item.metadata.name }}"
-  environment: "{{ {'KUBECONFIG': kubeconfig} if kubeconfig is defined and kubeconfig else {} }}"
+  environment: "{{ {'KUBECONFIG': kubeconfig} if (kubeconfig is defined and kubeconfig) else omit }}"
