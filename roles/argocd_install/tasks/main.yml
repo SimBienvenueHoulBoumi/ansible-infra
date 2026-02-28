@@ -47,7 +47,7 @@
     chart_ref: "{{ argocd_chart_path }}"
     release_namespace: "{{ argocd_namespace }}"
     create_namespace: true
-    values_file: "{{ argocd_values_file }}"
+    values_files: "{{ [argocd_values_file] }}"
     context: "{{ kube_context | default(omit) }}"
     validate_certs: "{{ k8s_validate_certs | default(false) }}"
     wait: true
