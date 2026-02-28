@@ -1,29 +1,30 @@
 ---
 # GitOps : installer ArgoCD + créer les Application CRs
-# Chart : ansible_root = répertoire qui contient playbooks/ (même niveau que Jenkinsfile).
-#   - argocd/ à côté de playbooks/ (ansible/argocd) → trouvé en premier
-#   - ou argocd/ au niveau parent (infra/argocd) → fallback
+# Structure : Jenkinsfile, argocd/, playbooks/, roles/ au même niveau.
+#   - Chart à côté de playbooks/ : {{ playbook_dir }}/../argocd/
+#   - Chart au niveau parent (infra/argocd) : {{ playbook_dir }}/../../argocd/
 
 - name: GitOps (ArgoCD)
   hosts: localhost
   gather_facts: true
   vars:
+    # Répertoire qui contient playbooks/ (même niveau que Jenkinsfile et argocd/)
     ansible_root: "{{ playbook_dir }}/.."
   tasks:
-    - name: Chart ArgoCD dans le même répertoire que le Jenkinsfile (ansible/argocd)
+    - name: Chart ArgoCD à côté de playbooks/ (argocd/Chart.yaml)
       ansible.builtin.stat:
-        path: "{{ ansible_root }}/argocd/Chart.yaml"
+        path: "{{ playbook_dir }}/../argocd/Chart.yaml"
       register: argocd_in_repo
 
     - name: Chart ArgoCD au niveau parent (infra/argocd)
       ansible.builtin.stat:
-        path: "{{ ansible_root }}/../argocd/Chart.yaml"
+        path: "{{ playbook_dir }}/../../argocd/Chart.yaml"
       register: argocd_sibling
 
     - name: Définir les chemins du chart ArgoCD
       ansible.builtin.set_fact:
-        argocd_chart_path: "{{ (ansible_root + '/argocd') if argocd_in_repo.stat.exists else (ansible_root + '/../argocd') }}"
-        argocd_values_file: "{{ (ansible_root + '/argocd/values.yaml') if argocd_in_repo.stat.exists else (ansible_root + '/../argocd/values.yaml') }}"
+        argocd_chart_path: "{{ (playbook_dir + '/../argocd') if argocd_in_repo.stat.exists else (playbook_dir + '/../../argocd') }}"
+        argocd_values_file: "{{ (playbook_dir + '/../argocd/values.yaml') if argocd_in_repo.stat.exists else (playbook_dir + '/../../argocd/values.yaml') }}"
       when: argocd_in_repo.stat.exists or argocd_sibling.stat.exists
 
     - name: Échec si le chart ArgoCD est introuvable (uniquement si on lance l'install)
