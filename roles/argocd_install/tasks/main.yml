@@ -48,6 +48,7 @@
     release_namespace: "{{ argocd_namespace }}"
     create_namespace: true
     values_files: "{{ [argocd_values_file] }}"
+    kubeconfig: "{{ kubeconfig if (kubeconfig is defined and kubeconfig) else omit }}"
     context: "{{ kube_context | default(omit) }}"
     validate_certs: "{{ k8s_validate_certs | default(false) }}"
     wait: true
