@@ -53,23 +53,23 @@ pipeline {
                             test -d infra/ansible && test -f infra/ansible/playbooks/gitops.yml || (echo 'Le repo doit avoir ansible/ et argocd/ à la racine.' && exit 1)
                         """
                     }
+                    // Repo type "ansible-infra" = playbooks à la racine ; sinon infra/ansible
+                    if (fileExists("${params.ANSIBLE_DIR}/playbooks/gitops.yml")) {
+                        env.ANSIBLE_WORKDIR = params.ANSIBLE_DIR
+                    } else if (fileExists("playbooks/gitops.yml")) {
+                        env.ANSIBLE_WORKDIR = "."
+                    } else {
+                        error("Playbook introuvable : ni ${params.ANSIBLE_DIR}/playbooks/gitops.yml ni playbooks/gitops.yml à la racine.")
+                    }
+                    echo "Répertoire Ansible : ${env.ANSIBLE_WORKDIR}"
+                    sh "ls -la ${env.ANSIBLE_WORKDIR}/"
                 }
-                sh """
-                    ANSIBLE_DIR='${params.ANSIBLE_DIR}'
-                    if [ ! -d "\$ANSIBLE_DIR" ] || [ ! -f "\$ANSIBLE_DIR/playbooks/gitops.yml" ]; then
-                        echo "Erreur: \$ANSIBLE_DIR/ introuvable ou playbooks/gitops.yml manquant."
-                        echo "  - Configurer le job pour cloner un repo qui a infra/ à la racine, OU"
-                        echo "  - Renseigner le paramètre INFRA_REPO_URL (URL du repo contenant ansible/ et argocd/ à la racine)."
-                        exit 1
-                    fi
-                    ls -la "\$ANSIBLE_DIR/"
-                """
             }
         }
 
         stage('🔧 Ansible') {
             steps {
-                dir("${params.ANSIBLE_DIR}") {
+                dir(env.ANSIBLE_WORKDIR) {
                     sh """
                         set -e
                         ansible --version

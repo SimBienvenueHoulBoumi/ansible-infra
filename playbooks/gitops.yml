@@ -1,20 +1,33 @@
 ---
-# GitOps : installer ArgoCD (chart au même niveau qu'ansible) + créer les Application CRs
-# Usage : depuis infra/ansible → ansible-playbook playbooks/gitops.yml [--tags install|applications]
+# GitOps : installer ArgoCD + créer les Application CRs
+# Supporte : repo type infra/ansible (argocd = ../argocd) ou ansible-infra à la racine (argocd = ./argocd)
 
 - name: GitOps (ArgoCD)
   hosts: localhost
   gather_facts: true
   vars:
     ansible_root: "{{ playbook_dir }}/.."
-    argocd_chart_path: "{{ ansible_root }}/../argocd"
-    argocd_values_file: "{{ ansible_root }}/../argocd/values.yaml"
   tasks:
-    - name: Vérifier que le chart ArgoCD existe
+    - name: Vérifier si le chart ArgoCD est dans le repo (ansible-infra avec argocd/)
       ansible.builtin.stat:
-        path: "{{ argocd_chart_path }}/Chart.yaml"
-      register: argocd_chart_stat
-      failed_when: not argocd_chart_stat.stat.exists
+        path: "{{ ansible_root }}/argocd/Chart.yaml"
+      register: argocd_in_repo
+
+    - name: Vérifier si le chart ArgoCD est au niveau parent (infra/argocd)
+      ansible.builtin.stat:
+        path: "{{ ansible_root }}/../argocd/Chart.yaml"
+      register: argocd_sibling
+
+    - name: Définir les chemins du chart ArgoCD
+      ansible.builtin.set_fact:
+        argocd_chart_path: "{{ (ansible_root + '/argocd') if argocd_in_repo.stat.exists else (ansible_root + '/../argocd') }}"
+        argocd_values_file: "{{ (ansible_root + '/argocd/values.yaml') if argocd_in_repo.stat.exists else (ansible_root + '/../argocd/values.yaml') }}"
+      when: argocd_in_repo.stat.exists or argocd_sibling.stat.exists
+
+    - name: Échec si le chart ArgoCD est introuvable
+      ansible.builtin.fail:
+        msg: "Chart ArgoCD introuvable. Ajouter argocd/ (Chart.yaml, values.yaml) à la racine du repo ou au même niveau qu'ansible (../argocd)."
+      when: not (argocd_in_repo.stat.exists or argocd_sibling.stat.exists)
 
     - name: Installer / mettre à jour ArgoCD (Helm)
       ansible.builtin.include_role:
