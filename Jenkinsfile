@@ -83,6 +83,13 @@ pipeline {
                             echo "Installation de la lib Python kubernetes pour l'utilisateur courant..."
                             python3 -m pip install --user --break-system-packages kubernetes 2>/dev/null || python3 -m pip install --user kubernetes
                         fi
+                        # Depuis le conteneur, 127.0.0.1 = le conteneur ; utiliser host.docker.internal pour joindre l'API K8s sur l'hôte
+                        ORIG_KUBE="\${KUBECONFIG:-/home/jenkins/.kube/config}"
+                        if [ -f "\$ORIG_KUBE" ] && grep -q '127.0.0.1' "\$ORIG_KUBE" 2>/dev/null; then
+                            export KUBECONFIG="/tmp/kubeconfig-\$\$.yaml"
+                            sed 's/127.0.0.1/host.docker.internal/g' "\$ORIG_KUBE" > "\$KUBECONFIG"
+                            echo "Kubeconfig adapté pour Docker (127.0.0.1 -> host.docker.internal)."
+                        fi
                         ansible --version
                         TAGS=""
                         case "${params.ANSIBLE_TAGS}" in
