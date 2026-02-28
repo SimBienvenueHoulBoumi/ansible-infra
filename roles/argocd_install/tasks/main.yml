@@ -16,7 +16,6 @@
     name: default
   register: cluster_check
   failed_when: false
-  changed_warning: false
 
 - name: Échec si le cluster n'est pas joignable
   ansible.builtin.fail:
